@@ -1,0 +1,20 @@
+{
+  "name": "vr-resume",
+  "version": "1.0.0",
+  "description": "An immersive 3D VR resume experience",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "vr",
+    "resume",
+    "3d",
+    "threejs",
+    "webxr",
+    "portfolio"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

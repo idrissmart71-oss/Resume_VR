@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journey Through Experience - Interactive Resume</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Questrial&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #00f3ff;
+            --secondary: #ff00ea;
+            --accent: #ffed4e;
+            --dark: #0a0e27;
+            --light: #e0f4ff;
+        }
+        
+        body {
+            font-family: 'Questrial', sans-serif;
+            background: var(--dark);
+            color: var(--light);
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        #info-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 14, 39, 0.92);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 60px rgba(0, 243, 255, 0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        
+        #info-panel.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        #info-panel h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 2.2em;
+            margin-bottom: 20px;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+        }
+        
+        #info-panel h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1.4em;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            color: var(--accent);
+        }
+        
+        #info-panel p, #info-panel li {
+            line-height: 1.8;
+            margin-bottom: 15px;
+            color: var(--light);
+        }
+        
+        #info-panel ul {
+            margin-left: 20px;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--secondary);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 234, 0.4);
+        }
+        
+        .close-btn:hover {
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 0, 234, 0.8);
+        }
+        
+        #ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        #title-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 50;
+            pointer-events: all;
+        }
+        
+        #title-screen h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 4em;
+            color: var(--primary);
+            text-shadow: 0 0 40px rgba(0, 243, 255, 0.8);
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        #title-screen p {
+            font-size: 1.3em;
+            color: var(--accent);
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px rgba(255, 237, 78, 0.5);
+        }
+        
+        #start-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1.4em;
+            padding: 20px 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        #start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 50px rgba(255, 0, 234, 0.8);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        #instructions {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 14, 39, 0.8);
+            padding: 20px 40px;
+            border-radius: 15px;
+            border: 1px solid var(--primary);
+            backdrop-filter: blur(10px);
+            font-size: 1.1em;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        #instructions.active {
+            opacity: 1;
+        }
+        
+        #instructions span {
+            color: var(--accent);
+            font-weight: bold;
+        }
+        
+        .zone-label {
+            position: absolute;
+            background: rgba(10, 14, 39, 0.85);
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            color: var(--primary);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+        
+        .zone-label.visible {
+            opacity: 1;
+        }
+        
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5em;
+            color: var(--primary);
+            z-index: 200;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(0, 243, 255, 0.3);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Custom scrollbar */
+        #info-panel::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        #info-panel::-webkit-scrollbar-track {
+            background: rgba(0, 243, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        #info-panel::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+        
+        #info-panel::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="loading-spinner"></div>
+        Initializing Reality...
+    </div>
+    
+    <div id="title-screen">
+        <h1>JOURNEY THROUGH EXPERIENCE</h1>
+        <p>An Immersive Documentary Resume</p>
+        <button id="start-btn">Enter the World</button>
+    </div>
+    
+    <div id="canvas-container"></div>
+    
+    <div id="ui-overlay">
+        <div id="instructions">
+            <span>CLICK</span> on glowing orbs to explore • <span>DRAG</span> to rotate view
+        </div>
+    </div>
+    
+    <div id="info-panel">
+        <button class="close-btn">×</button>
+        <div id="panel-content"></div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Resume Data - CUSTOMIZE THIS SECTION WITH YOUR INFORMATION
+        const resumeData = {
+            name: "Alex Rivera",
+            title: "Creative Technologist & VR Developer",
+            contact: {
+                email: "alex.rivera@example.com",
+                linkedin: "linkedin.com/in/alexrivera",
+                github: "github.com/alexrivera",
+                portfolio: "alexrivera.dev"
+            },
+            about: "Pioneering immersive experiences at the intersection of technology and storytelling. Passionate about creating worlds that inspire, educate, and transform.",
+            
+            zones: [
+                {
+                    name: "Education Hub",
+                    icon: "🎓",
+                    color: 0x00f3ff,
+                    position: [-8, 2, 0],
+                    content: {
+                        title: "Educational Background",
+                        sections: [
+                            {
+                                heading: "Master of Science in Computer Science",
+                                details: "Stanford University • 2019-2021<br>Specialization: Virtual Reality & Human-Computer Interaction<br>GPA: 3.9/4.0"
+                            },
+                            {
+                                heading: "Bachelor of Arts in Digital Media",
+                                details: "MIT • 2015-2019<br>Minor in Cognitive Science<br>Summa Cum Laude"
+                            }
+                        ]
+                    }
+                },
+                {
+                    name: "Skills Galaxy",
+                    icon: "⚡",
+                    color: 0xffed4e,
+                    position: [0, 2, -8],
+                    content: {
+                        title: "Technical Arsenal",
+                        sections: [
+                            {
+                                heading: "3D & VR Technologies",
+                                list: ["Three.js, WebGL, WebXR", "Unity & Unreal Engine", "Blender, Maya, Cinema 4D", "A-Frame, React Three Fiber"]
+                            },
+                            {
+                                heading: "Programming Languages",
+                                list: ["JavaScript/TypeScript", "Python, C#, C++", "GLSL Shaders", "Rust for WebAssembly"]
+                            },
+                            {
+                                heading: "Creative Tools",
+                                list: ["Adobe Creative Suite", "Figma, Framer", "TouchDesigner", "Substance Painter"]
+                            }
+                        ]
+                    }
+                },
+                {
+                    name: "Experience Realm",
+                    icon: "💼",
+                    color: 0xff00ea,
+                    position: [8, 2, 0],
+                    content: {
+                        title: "Professional Journey",
+                        sections: [
+                            {
+                                heading: "Senior VR Developer - Meta Reality Labs",
+                                details: "2022 - Present<br>• Leading development of next-gen social VR experiences<br>• Built immersive training simulations used by 50K+ users<br>• Architected WebXR framework reducing load times by 60%"
+                            },
+                            {
+                                heading: "Creative Technologist - Google Arts & Culture",
+                                details: "2021 - 2022<br>• Created virtual museum experiences with 2M+ visitors<br>• Developed AR art installations for public spaces<br>• Collaborated with artists worldwide on digital exhibitions"
+                            },
+                            {
+                                heading: "Interactive Developer - Freelance",
+                                details: "2019 - 2021<br>• Built interactive web experiences for Fortune 500 clients<br>• Specialized in 3D product visualizations and configurators<br>• Award-winning portfolio site with 100K+ visitors"
+                            }
+                        ]
+                    }
+                },
+                {
+                    name: "Projects Universe",
+                    icon: "🚀",
+                    color: 0x00ff88,
+                    position: [0, 2, 8],
+                    content: {
+                        title: "Featured Projects",
+                        sections: [
+                            {
+                                heading: "NeuroScape - Brain Visualization Platform",
+                                details: "A WebXR application for visualizing neural networks in 3D space. Featured in TechCrunch and used by researchers at 15+ universities."
+                            },
+                            {
+                                heading: "TimeFlow - Historical Events in VR",
+                                details: "An immersive documentary experience exploring major historical moments through interactive timelines and 360° reconstructions."
+                            },
+                            {
+                                heading: "EcoSphere - Climate Data Visualization",
+                                details: "Award-winning interactive globe showing real-time climate data. Winner of the WebXR Awards 2023."
+                            }
+                        ]
+                    }
+                },
+                {
+                    name: "Achievements Peak",
+                    icon: "🏆",
+                    color: 0xff6b35,
+                    position: [5, 6, 5],
+                    content: {
+                        title: "Awards & Recognition",
+                        sections: [
+                            {
+                                heading: "Industry Recognition",
+                                list: [
+                                    "WebXR Awards - Best Educational Experience (2023)",
+                                    "Awwwards - Site of the Day x3",
+                                    "FWA - Mobile of the Day",
+                                    "Speaker at SIGGRAPH, GDC, and WebXR Summit"
+                                ]
+                            },
+                            {
+                                heading: "Publications",
+                                list: [
+                                    "\"Democratizing VR: Accessible WebXR Patterns\" - Medium (50K reads)",
+                                    "\"The Future of Immersive Storytelling\" - Smashing Magazine",
+                                    "Research paper on VR accessibility - ACM SIGGRAPH"
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ]
+        };
+        
+        // Three.js Scene Setup
+        let scene, camera, renderer, raycaster, mouse;
+        let interactiveObjects = [];
+        let isExploring = false;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraRotation = { x: 0, y: 0 };
+        
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x0a0e27, 0.015);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 3, 15);
+            camera.lookAt(0, 2, 0);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            // Raycaster for interaction
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+            
+            const mainLight = new THREE.PointLight(0x00f3ff, 2, 100);
+            mainLight.position.set(0, 10, 0);
+            scene.add(mainLight);
+            
+            // Create starfield background
+            createStarfield();
+            
+            // Create ground grid
+            createGround();
+            
+            // Create central monument
+            createCentralMonument();
+            
+            // Create zone spheres
+            createZones();
+            
+            // Create particles
+            createParticles();
+            
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('click', onMouseClick);
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            
+            document.getElementById('start-btn').addEventListener('click', startExperience);
+            document.querySelector('.close-btn').addEventListener('click', closePanel);
+            
+            // Hide loading
+            document.getElementById('loading').style.display = 'none';
+            
+            animate();
+        }
+        
+        function createStarfield() {
+            const starGeometry = new THREE.BufferGeometry();
+            const starVertices = [];
+            
+            for (let i = 0; i < 10000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starVertices.push(x, y, z);
+            }
+            
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1, transparent: true, opacity: 0.8 });
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+        }
+        
+        function createGround() {
+            const gridHelper = new THREE.GridHelper(50, 50, 0x00f3ff, 0x0a0e27);
+            gridHelper.material.opacity = 0.3;
+            gridHelper.material.transparent = true;
+            scene.add(gridHelper);
+            
+            // Glowing ground plane
+            const groundGeometry = new THREE.PlaneGeometry(50, 50);
+            const groundMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x00f3ff, 
+                transparent: true, 
+                opacity: 0.05,
+                side: THREE.DoubleSide
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = 0;
+            scene.add(ground);
+        }
+        
+        function createCentralMonument() {
+            const group = new THREE.Group();
+            
+            // Main pillar
+            const pillarGeometry = new THREE.CylinderGeometry(0.5, 0.8, 8, 32);
+            const pillarMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x00f3ff,
+                emissive: 0x00f3ff,
+                emissiveIntensity: 0.5,
+                transparent: true,
+                opacity: 0.8
+            });
+            const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
+            pillar.position.y = 4;
+            group.add(pillar);
+            
+            // Floating rings
+            for (let i = 0; i < 3; i++) {
+                const ringGeometry = new THREE.TorusGeometry(2 + i * 0.5, 0.1, 16, 100);
+                const ringMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0xff00ea,
+                    emissive: 0xff00ea,
+                    emissiveIntensity: 0.5,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                ring.position.y = 2 + i * 2;
+                ring.rotation.x = Math.PI / 2;
+                ring.userData = { rotationSpeed: 0.002 + i * 0.001, axis: 'y' };
+                group.add(ring);
+            }
+            
+            scene.add(group);
+            group.userData = { type: 'monument' };
+        }
+        
+        function createZones() {
+            resumeData.zones.forEach((zone, index) => {
+                const group = new THREE.Group();
+                
+                // Main sphere
+                const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+                const sphereMaterial = new THREE.MeshPhongMaterial({ 
+                    color: zone.color,
+                    emissive: zone.color,
+                    emissiveIntensity: 0.7,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                group.add(sphere);
+                
+                // Outer glow ring
+                const ringGeometry = new THREE.TorusGeometry(1.5, 0.05, 16, 100);
+                const ringMaterial = new THREE.MeshBasicMaterial({ 
+                    color: zone.color,
+                    transparent: true,
+                    opacity: 0.5
+                });
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                ring.rotation.x = Math.PI / 2;
+                group.add(ring);
+                
+                // Particles orbiting
+                const particleGeometry = new THREE.BufferGeometry();
+                const particleVertices = [];
+                for (let i = 0; i < 50; i++) {
+                    const angle = (i / 50) * Math.PI * 2;
+                    const radius = 2;
+                    particleVertices.push(
+                        Math.cos(angle) * radius,
+                        (Math.random() - 0.5) * 0.5,
+                        Math.sin(angle) * radius
+                    );
+                }
+                particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(particleVertices, 3));
+                const particleMaterial = new THREE.PointsMaterial({ color: zone.color, size: 0.1 });
+                const particles = new THREE.Points(particleGeometry, particleMaterial);
+                group.add(particles);
+                
+                group.position.set(zone.position[0], zone.position[1], zone.position[2]);
+                group.userData = { 
+                    type: 'zone', 
+                    zoneData: zone,
+                    rotationSpeed: 0.01,
+                    hoverScale: 1,
+                    targetScale: 1
+                };
+                
+                scene.add(group);
+                interactiveObjects.push(sphere);
+            });
+        }
+        
+        function createParticles() {
+            const particleCount = 1000;
+            const particleGeometry = new THREE.BufferGeometry();
+            const particleVertices = [];
+            
+            for (let i = 0; i < particleCount; i++) {
+                const x = (Math.random() - 0.5) * 100;
+                const y = Math.random() * 50;
+                const z = (Math.random() - 0.5) * 100;
+                particleVertices.push(x, y, z);
+            }
+            
+            particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(particleVertices, 3));
+            const particleMaterial = new THREE.PointsMaterial({ 
+                color: 0x00f3ff, 
+                size: 0.2,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+            const particles = new THREE.Points(particleGeometry, particleMaterial);
+            particles.userData = { type: 'ambient-particles' };
+            scene.add(particles);
+        }
+        
+        function startExperience() {
+            document.getElementById('title-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('title-screen').style.display = 'none';
+                document.getElementById('instructions').classList.add('active');
+                isExploring = true;
+            }, 500);
+        }
+        
+        function onMouseClick(event) {
+            if (!isExploring || isDragging) return;
+            
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+            
+            if (intersects.length > 0) {
+                const clickedObject = intersects[0].object;
+                const parentGroup = clickedObject.parent;
+                
+                if (parentGroup.userData.type === 'zone') {
+                    showZoneInfo(parentGroup.userData.zoneData);
+                }
+            }
+        }
+        
+        function onMouseDown(event) {
+            isDragging = false;
+            previousMousePosition = { x: event.clientX, y: event.clientY };
+        }
+        
+        function onMouseMove(event) {
+            if (event.buttons === 1 && isExploring) {
+                isDragging = true;
+                const deltaX = event.clientX - previousMousePosition.x;
+                const deltaY = event.clientY - previousMousePosition.y;
+                
+                cameraRotation.y += deltaX * 0.005;
+                cameraRotation.x += deltaY * 0.005;
+                cameraRotation.x = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, cameraRotation.x));
+                
+                previousMousePosition = { x: event.clientX, y: event.clientY };
+            }
+            
+            // Hover effect
+            if (isExploring && !isDragging) {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(interactiveObjects);
+                
+                interactiveObjects.forEach(obj => {
+                    const group = obj.parent;
+                    if (group.userData.type === 'zone') {
+                        group.userData.targetScale = 1;
+                    }
+                });
+                
+                if (intersects.length > 0) {
+                    const hoveredObject = intersects[0].object;
+                    const parentGroup = hoveredObject.parent;
+                    if (parentGroup.userData.type === 'zone') {
+                        parentGroup.userData.targetScale = 1.2;
+                        document.body.style.cursor = 'pointer';
+                    }
+                } else {
+                    document.body.style.cursor = 'crosshair';
+                }
+            }
+        }
+        
+        function onMouseUp() {
+            setTimeout(() => { isDragging = false; }, 100);
+        }
+        
+        function showZoneInfo(zoneData) {
+            const content = zoneData.content;
+            let html = `<h2>${content.title}</h2>`;
+            
+            content.sections.forEach(section => {
+                html += `<h3>${section.heading}</h3>`;
+                if (section.details) {
+                    html += `<p>${section.details}</p>`;
+                }
+                if (section.list) {
+                    html += '<ul>';
+                    section.list.forEach(item => {
+                        html += `<li>${item}</li>`;
+                    });
+                    html += '</ul>';
+                }
+            });
+            
+            document.getElementById('panel-content').innerHTML = html;
+            document.getElementById('info-panel').classList.add('active');
+        }
+        
+        function closePanel() {
+            document.getElementById('info-panel').classList.remove('active');
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = Date.now() * 0.001;
+            
+            // Rotate camera based on drag
+            const radius = 15;
+            camera.position.x = Math.sin(cameraRotation.y) * radius * Math.cos(cameraRotation.x);
+            camera.position.y = 3 + Math.sin(cameraRotation.x) * 10;
+            camera.position.z = Math.cos(cameraRotation.y) * radius * Math.cos(cameraRotation.x);
+            camera.lookAt(0, 2, 0);
+            
+            // Animate all objects
+            scene.traverse(obj => {
+                if (obj.userData.type === 'zone') {
+                    obj.rotation.y += obj.userData.rotationSpeed;
+                    
+                    // Smooth scale animation
+                    const currentScale = obj.scale.x;
+                    const targetScale = obj.userData.targetScale;
+                    const newScale = currentScale + (targetScale - currentScale) * 0.1;
+                    obj.scale.set(newScale, newScale, newScale);
+                    
+                    // Float animation
+                    obj.position.y += Math.sin(time + obj.position.x) * 0.002;
+                }
+                
+                if (obj.userData.rotationSpeed) {
+                    if (obj.userData.axis === 'y') {
+                        obj.rotation.y += obj.userData.rotationSpeed;
+                    } else {
+                        obj.rotation.z += obj.userData.rotationSpeed;
+                    }
+                }
+                
+                if (obj.userData.type === 'ambient-particles') {
+                    obj.rotation.y += 0.0005;
+                }
+            });
+            
+            renderer.render(scene, camera);
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
